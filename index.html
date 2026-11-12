@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Benny SpeedTest</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#5b5bf0">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+
+<style>
+:root{--bg:#f4f5fa;--card:#fff;--tx:#14141c;--mut:#6a6b7c;--acc:#5b5bf0;--ok:#12a150;--bad:#e5484d;--line:#e2e3ec;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e0f15;--card:#1a1b24;--tx:#f2f2f7;--mut:#9a9bb0;--line:#2b2c38;--acc:#7b7bff;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e0f15;--card:#1a1b24;--tx:#f2f2f7;--mut:#9a9bb0;--line:#2b2c38;--acc:#7b7bff;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;min-height:100vh}
+#app{max-width:520px;margin:0 auto;padding:18px 16px 32px}
+h1{margin:6px 0 2px;font-size:28px;font-weight:900;letter-spacing:.5px}
+h1 span{color:var(--acc)}
+.sub{margin:0 0 16px;color:var(--mut);font-size:14px}
+.idx{display:flex;gap:10px;margin-bottom:14px}
+.idx div{flex:1;background:var(--acc);color:#fff;border-radius:14px;padding:12px 14px}
+.idx small{display:block;font-size:12px;opacity:.85}
+.idx b{font-size:30px}
+.card{display:flex;gap:12px;align-items:center;width:100%;text-align:left;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px;color:var(--tx);font:inherit;cursor:pointer}
+.ic{font-size:30px}
+.card b{font-size:17px}
+.card i{font-style:normal;font-size:11px;font-weight:700;color:var(--acc);border:1px solid var(--acc);border-radius:20px;padding:1px 7px;margin-left:4px}
+.card small{display:block;color:var(--mut);font-size:13px;margin:3px 0}
+.card em{font-style:normal;font-size:12px;font-weight:700;color:var(--ok)}
+.top{display:flex;align-items:center;gap:12px;margin-bottom:12px;font-weight:800;font-size:17px}
+.back{background:var(--card);border:1px solid var(--line);color:var(--tx);border-radius:10px;padding:8px 12px;font:inherit;font-size:14px;cursor:pointer}
+.cnt{text-align:center;color:var(--mut);font-size:14px;margin:8px 0}
+.prog{height:6px;background:var(--line);border-radius:6px;overflow:hidden}
+.prog div{height:100%;background:var(--acc);transition:width .3s}
+.q{text-align:center;font-size:40px;font-weight:900;margin:26px 0;min-height:60px;line-height:1.2}
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.opt{padding:18px 8px;font:inherit;font-size:22px;font-weight:800;border-radius:12px;border:2px solid var(--line);background:var(--card);color:var(--tx);cursor:pointer}
+.opt.ok{background:var(--ok);border-color:var(--ok);color:#fff}
+.opt.bad{background:var(--bad);border-color:var(--bad);color:#fff}
+#pad{min-height:50vh;border-radius:16px;background:var(--card);border:2px solid var(--line);display:flex;align-items:center;justify-content:center;text-align:center;touch-action:manipulation;user-select:none;-webkit-user-select:none}
+#pad.go{background:var(--ok);border-color:var(--ok);color:#fff}
+#pad.fail{background:var(--bad);border-color:var(--bad);color:#fff}
+#msg{font-size:34px;font-weight:900;pointer-events:none}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:16px 0}
+.cell{aspect-ratio:1;border-radius:14px;border:2px solid var(--line);background:var(--card);cursor:pointer;touch-action:manipulation}
+.cell.on{background:var(--acc);border-color:var(--acc);box-shadow:0 0 18px var(--acc)}
+.res{text-align:center;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 14px;margin-bottom:6px}
+.big{font-size:64px;font-weight:900;color:var(--acc)}
+.big span{font-size:22px;color:var(--mut)}
+.g{font-size:20px;font-weight:800;margin:4px 0}
+.res p{color:var(--mut);margin:6px 0;font-size:15px}
+.btn{display:block;width:100%;padding:14px;margin-top:10px;border-radius:12px;border:0;background:var(--acc);color:#fff;font:inherit;font-weight:800;font-size:16px;cursor:pointer}
+.btn.alt{background:var(--card);color:var(--tx);border:1px solid var(--line)}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>BENNY <span>SPEEDTEST</span></h1>
+  <p class="sub">Entraîne ta rapidité, ta mémoire, ton raisonnement et ta prise de décision.</p>
+  <div id="stage"></div>
+</div>
+<script>
+const $=s=>document.querySelector(s),S=$('#stage');
+let D={best:{},days:[]};
+try{D=Object.assign(D,JSON.parse(localStorage.getItem('benny-brain')||'{}'))}catch(e){}
+const save=()=>{try{localStorage.setItem('benny-brain',JSON.stringify(D))}catch(e){}};
+let T=[];const later=(f,ms)=>{const t=setTimeout(f,ms);T.push(t);return t};const stop=()=>{T.forEach(clearTimeout);T=[]};
+const R=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const shuf=a=>a.map(x=>[Math.random(),x]).sort((p,q)=>p[0]-q[0]).map(x=>x[1]);
+const EX=[
+{id:'reflex',ic:'⚡',t:'Réflexes',c:'Vitesse',d:'Touche l’écran dès qu’il devient vert. 5 essais.'},
+{id:'calc',ic:'➕',t:'Calcul éclair',c:'Rapidité',d:'10 calculs mentaux de plus en plus durs.'},
+{id:'stroop',ic:'🎨',t:'Couleur contre mot',c:'Décision',d:'Choisis la couleur de l’encre, pas le mot écrit.'},
+{id:'logic',ic:'🧩',t:'Suites logiques',c:'Raisonnement',d:'Trouve le nombre suivant. 8 suites.'},
+{id:'memory',ic:'🧠',t:'Mémoire de séquence',c:'Apprentissage',d:'Mémorise et répète une séquence qui s’allonge.'}];
+
+function frame(title,body){S.innerHTML=`<div class="top"><button class="back" id="bk">← Menu</button><span>${title}</span></div>`+body;$('#bk').onclick=home}
+function home(){stop();
+  const v=EX.map(e=>D.best[e.id]||0),idx=Math.round(v.reduce((a,b)=>a+b,0)/EX.length);
+  S.innerHTML=`<div class="idx"><div><small>Indice cérébral</small><b>${idx}</b></div><div><small>Jours d’entraînement</small><b>${D.days.length}</b></div></div>`+
+  EX.map(e=>`<button class="card" data-id="${e.id}"><span class="ic">${e.ic}</span><span><b>${e.t}</b><i>${e.c}</i><small>${e.d}</small><em>${D.best[e.id]!=null?'Meilleur score : '+D.best[e.id]+'/100':'Pas encore joué'}</em></span></button>`).join('');
+  S.querySelectorAll('.card').forEach(c=>c.onclick=()=>run(c.dataset.id));
+}
+function run(id){({reflex,calc,stroop,logic,memory})[id]()}
+function end(id,sc,det){stop();
+  const prev=D.best[id],nb=prev==null||sc>prev;if(nb)D.best[id]=sc;
+  const d=new Date().toISOString().slice(0,10);if(!D.days.includes(d))D.days.push(d);save();
+  const g=sc>=85?'🏆 Excellent':sc>=65?'🔥 Très bien':sc>=40?'👍 Bien':'💪 Continue, tu progresses';
+  frame('Résultat',`<div class="res"><div class="big">${sc}<span>/100</span></div><div class="g">${g}</div><p>${det}</p><p>${nb?'⭐ Nouveau record !':'Record : '+prev+'/100'}</p></div><button class="btn" id="re">Rejouer</button><button class="btn alt" id="mn">Menu</button>`);
+  $('#re').onclick=()=>run(id);$('#mn').onclick=home;
+}
+function quiz(id,title,qs){let i=0,pts=0,ok=0,tm=[],t0,lock;
+  const show=()=>{const q=qs[i];
+    frame(title,`<div class="prog"><div style="width:${i/qs.length*100}%"></div></div><div class="cnt">${i+1} / ${qs.length}</div><div class="q">${q.h}</div><div class="opts">${q.o.map(o=>`<button class="opt">${o}</button>`).join('')}</div>`);
+    lock=false;t0=performance.now();
+    S.querySelectorAll('.opt').forEach(b=>b.onclick=()=>{if(lock)return;lock=true;
+      const t=performance.now()-t0,good=b.textContent===String(q.a);tm.push(t);
+      if(good){ok++;pts+=Math.max(3,10-1.2*t/1000)}
+      b.classList.add(good?'ok':'bad');
+      if(!good)S.querySelectorAll('.opt').forEach(x=>{if(x.textContent===String(q.a))x.classList.add('ok')});
+      later(()=>{++i<qs.length?show():end(id,Math.round(pts*10/ (qs.length/10*10)),`${ok}/${qs.length} bonnes réponses · ${(tm.reduce((a,b)=>a+b,0)/tm.length/1000).toFixed(1)} s par réponse`)},450)});
+  };show();
+}
+const opts=(a,sp)=>{const s=new Set([a]);while(s.size<4){const x=a+R(-sp,sp);if(x!==a&&x>=0)s.add(x)}return shuf([...s]).map(String)};
+
+function calc(){const qs=[];
+  for(let k=0;k<10;k++){let a,b,h,r;
+    if(k<4){a=R(12,60);b=R(5,40);if(R(0,1)){r=a+b;h=`${a} + ${b}`}else{r=a-b;h=`${a} − ${b}`}}
+    else if(k<7){a=R(6,12);b=R(6,12);r=a*b;h=`${a} × ${b}`}
+    else{a=R(11,19);b=R(4,9);r=a*b;h=`${a} × ${b}`}
+    qs.push({h,a:r,o:opts(r,k<4?10:12)});
+  }quiz('calc','Calcul éclair',qs)}
+
+function stroop(){const C=[{n:'Rouge',v:'#e5484d'},{n:'Bleu',v:'#3b82f6'},{n:'Vert',v:'#12a150'},{n:'Jaune',v:'#d9a400'}],qs=[];
+  for(let k=0;k<10;k++){const w=C[R(0,3)];let c=C[R(0,3)];if(R(0,4)&&c===w)c=C[(C.indexOf(w)+R(1,3))%4];
+    qs.push({h:`<span style="color:${c.v}">${w.n.toUpperCase()}</span>`,a:c.n,o:C.map(x=>x.n)})}
+  quiz('stroop','Couleur contre mot',qs)}
+
+function logic(){const qs=[];
+  for(let k=0;k<8;k++){const t=k<2?R(0,1):R(0,5);let a=[],s,d,x,y;
+    if(t===0){s=R(1,20);d=R(2,9);a=[...Array(6)].map((_,i)=>s+d*i)}
+    if(t===1){s=R(1,4);d=R(2,3);a=[...Array(6)].map((_,i)=>s*d**i)}
+    if(t===2){s=R(10,30);x=R(3,9);y=R(1,x-1);a=[s];for(let i=1;i<6;i++)a.push(a[i-1]+(i%2?x:-y))}
+    if(t===3){s=R(1,6);a=[...Array(6)].map((_,i)=>(s+i)**2)}
+    if(t===4){s=R(1,10);d=R(1,3);a=[s];for(let i=1;i<6;i++)a.push(a[i-1]+d+i-1)}
+    if(t===5){a=[R(1,4),R(2,6)];for(let i=2;i<6;i++)a.push(a[i-1]+a[i-2])}
+    const r=a[5];qs.push({h:`<span style="font-size:28px">${a.slice(0,5).join(' , ')} , ?</span>`,a:r,o:opts(r,Math.max(4,Math.round(r*.15)))});
+  }quiz('logic','Suites logiques',qs)}
+
+function reflex(){const times=[];let st,t0;
+  const rd=()=>{
+    frame('Réflexes',`<div class="cnt">Essai ${times.length+1} / 5</div><div id="pad"><div id="msg">Attends le vert…</div></div>`);
+    const pad=$('#pad');st='wait';
+    pad.onpointerdown=()=>{
+      if(st==='wait'){stop();st='x';pad.className='fail';$('#msg').textContent='Trop tôt !';later(rd,1100)}
+      else if(st==='go'){const t=Math.round(performance.now()-t0);times.push(t);st='x';pad.className='';$('#msg').textContent=t+' ms';
+        later(()=>{if(times.length<5)return rd();const avg=Math.round(times.reduce((a,b)=>a+b,0)/5);
+          end('reflex',Math.max(0,Math.min(100,Math.round((600-avg)/4))),`Temps moyen : ${avg} ms · ${times.join(' / ')} ms`)},900)}};
+    later(()=>{st='go';pad.className='go';$('#msg').textContent='TOUCHE !';t0=performance.now()},1000+Math.random()*2500);
+  };rd()}
+
+function memory(){let len=2,seq=[],inp=[],done=0,ok=false;
+  frame('Mémoire de séquence',`<div class="cnt" id="ml"></div><div class="grid">${[...Array(9)].map((_,i)=>`<button class="cell" data-i="${i}"></button>`).join('')}</div><div class="cnt" id="mm"></div>`);
+  const cells=[...S.querySelectorAll('.cell')];
+  const flash=(i,ms)=>{cells[i].classList.add('on');later(()=>cells[i].classList.remove('on'),ms)};
+  const play=()=>{seq=[...Array(len)].map(()=>R(0,8));inp=[];ok=false;
+    $('#ml').textContent='Longueur : '+len;$('#mm').textContent='Regarde…';
+    seq.forEach((c,k)=>later(()=>flash(c,450),700+k*700));
+    later(()=>{ok=true;$('#mm').textContent='À toi !'},700+len*700)};
+  cells.forEach(c=>c.onpointerdown=()=>{if(!ok)return;const i=+c.dataset.i;flash(i,200);inp.push(i);const k=inp.length-1;
+    if(inp[k]!==seq[k]){ok=false;end('memory',Math.min(100,done*10),`Plus longue séquence répétée : ${done}`);return}
+    if(inp.length===len){ok=false;done=len;len++;$('#mm').textContent='Bravo !';later(play,900)}});
+  play()}
+
+home();
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}
+</script>
+</body>
+</html>
